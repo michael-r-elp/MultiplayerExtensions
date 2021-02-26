@@ -13,6 +13,12 @@ namespace MultiplayerExtensions.Installers
         {
             Container.BindInterfacesAndSelfTo<LobbyPlaceManager>().AsSingle();
             Container.BindInterfacesAndSelfTo<LobbyEnvironmentManager>().AsSingle();
+
+            Container.Bind<BeatmapLevelsModel>()
+                .To<MultiplayerBeatmapLevelsModel>()
+                .FromNewComponentOnRoot()
+                .AsSingle()
+                .When(c => typeof(MultiplayerLevelLoader).IsAssignableFrom(c.ObjectType));
         }
 
         public override void Start()
