@@ -1,5 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using BeatSaber.AvatarCore;
 using HMUI;
 using MultiplayerCore.Players;
 using MultiplayerExtensions.Players;
@@ -10,7 +10,7 @@ using Zenject;
 
 namespace MultiplayerExtensions.Environments.Lobby
 {
-    public class MpexAvatarNameTag : MonoBehaviour
+	public class MpexAvatarNameTag : MonoBehaviour
     {
         enum PlayerIconSlot
         {

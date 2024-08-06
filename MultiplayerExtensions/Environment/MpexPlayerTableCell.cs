@@ -47,19 +47,19 @@ namespace MultiplayerExtensions.Objects
 
         [AffinityPrefix]
         [AffinityPatch(typeof(GameServerPlayerTableCell), nameof(GameServerPlayerTableCell.SetData))]
-        public void SetDataPrefix(IConnectedPlayer connectedPlayer, ILobbyPlayerData playerData, bool hasKickPermissions, bool allowSelection, Task<AdditionalContentModel.EntitlementStatus> getLevelEntitlementTask, Image ____localPlayerBackgroundImage)
+        public void SetDataPrefix(IConnectedPlayer connectedPlayer, ILobbyPlayerData playerData, bool hasKickPermissions, bool allowSelection, Task<EntitlementStatus> getLevelEntitlementTask, Image ____localPlayerBackgroundImage)
         {
             if (getLevelEntitlementTask != null)
-                getLevelEntitlementTask = Task.FromResult(AdditionalContentModel.EntitlementStatus.Owned);
+                getLevelEntitlementTask = Task.FromResult(EntitlementStatus.Owned);
         }
 
         [AffinityPostfix]
         [AffinityPatch(typeof(GameServerPlayerTableCell), nameof(GameServerPlayerTableCell.SetData))]
-        public void SetDataPostfix(IConnectedPlayer connectedPlayer, ILobbyPlayerData playerData, bool hasKickPermissions, bool allowSelection, Task<AdditionalContentModel.EntitlementStatus> getLevelEntitlementTask, Image ____localPlayerBackgroundImage)
+        public void SetDataPostfix(IConnectedPlayer connectedPlayer, ILobbyPlayerData playerData, bool hasKickPermissions, bool allowSelection, Task<EntitlementStatus> getLevelEntitlementTask, Image ____localPlayerBackgroundImage)
         {
             ____localPlayerBackgroundImage.enabled = true;
-            string? hostSelectedLevel = _playersDataModel[_playersDataModel.partyOwnerId].beatmapLevel?.beatmapLevel?.levelID;
-            if (hostSelectedLevel == null)
+            string hostSelectedLevel = _playersDataModel[_playersDataModel.partyOwnerId].beatmapKey.levelId;
+            if (string.IsNullOrEmpty(hostSelectedLevel))
             {
                 SetLevelEntitlement(____localPlayerBackgroundImage, EntitlementsStatus.Unknown);
                 return;
@@ -67,7 +67,7 @@ namespace MultiplayerExtensions.Objects
 
             EntitlementsStatus entitlement = EntitlementsStatus.Unknown;
             if (!connectedPlayer.isMe)
-                entitlement = _entitlementChecker.GetUserEntitlementStatusWithoutRequest(connectedPlayer.userId, hostSelectedLevel);
+                entitlement = _entitlementChecker.GetKnownEntitlement(connectedPlayer.userId, hostSelectedLevel);
             // TODO: change color for local player
             if (entitlement != EntitlementsStatus.Unknown)
                 SetLevelEntitlement(____localPlayerBackgroundImage, entitlement);
