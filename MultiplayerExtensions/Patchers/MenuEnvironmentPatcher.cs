@@ -37,18 +37,18 @@ namespace MultiplayerExtensions.Patchers
 
         [AffinityPrefix]
         [AffinityPatch(typeof(MultiplayerLevelScenesTransitionSetupDataSO), "Init")]
-        private void SetEnvironmentScene(ref BeatmapKey beatmapKey, ref BeatmapLevel beatmapLevel, ref EnvironmentInfoSO ____multiplayerEnvironmentInfo)
+        private void SetEnvironmentScene(ref MultiplayerLevelScenesTransitionSetupDataSO __instance, ref BeatmapKey beatmapKey, ref BeatmapLevel beatmapLevel, ref EnvironmentInfoSO ____loadedMultiplayerEnvironmentInfo)
         {
             if (!_config.SoloEnvironment)
                 return;
             EnvironmentName envName =
 	            beatmapLevel.GetEnvironmentName(beatmapKey.beatmapCharacteristic, beatmapKey.difficulty);
             EnvironmentInfoSO? environmentInfo = _environmentsListModel.GetEnvironmentInfoBySerializedNameSafe(envName);
-			_originalEnvironmentInfo = ____multiplayerEnvironmentInfo;
-			____multiplayerEnvironmentInfo = environmentInfo;
-				____multiplayerEnvironmentInfo = environmentInfo;
+            if (____loadedMultiplayerEnvironmentInfo == null) __instance.GetOrLoadMultiplayerEnvironmentInfo(); // If the original env info is not loaded, we load it
+			_originalEnvironmentInfo = ____loadedMultiplayerEnvironmentInfo;
+			____loadedMultiplayerEnvironmentInfo = environmentInfo;
             if (_gameplaySetup.environmentOverrideSettings.overrideEnvironments)
-                ____multiplayerEnvironmentInfo = _gameplaySetup.environmentOverrideSettings.GetOverrideEnvironmentInfoForType(____multiplayerEnvironmentInfo.environmentType);
+	            ____loadedMultiplayerEnvironmentInfo = _gameplaySetup.environmentOverrideSettings.GetOverrideEnvironmentInfoForType(____loadedMultiplayerEnvironmentInfo.environmentType);
         }
 
         [AffinityPostfix]
@@ -65,6 +65,7 @@ namespace MultiplayerExtensions.Patchers
         {
             if (_config.SoloEnvironment && scenes.Any(scene => scene.name.Contains("Multiplayer")))
             {
+                _logger.Debug($"At least one scenes name contains Multiplayer, adding original env info");
                 scenes = scenes.AddItem(_originalEnvironmentInfo.sceneInfo).ToArray();
             }
         }

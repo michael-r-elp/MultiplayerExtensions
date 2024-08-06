@@ -227,20 +227,27 @@ namespace MultiplayerExtensions.Patchers
         [AffinityPatch(typeof(GameplayCoreInstaller), nameof(GameplayCoreInstaller.InstallBindings))]
         private void SetEnvironmentColors(GameplayCoreInstaller __instance)
         {
-            if (!_config.SoloEnvironment || !_scenesManager.IsSceneInStack("MultiplayerEnvironment"))
-                return;
+	        if (!_config.SoloEnvironment || !_scenesManager.IsSceneInStack("MultiplayerEnvironment"))
+	        {
+                _logger.Debug("Either SoloEnvironment disabled or MultiplayerEnvironment not in scene stack, returning");
+		        return;
+			}
 
-            DiContainer container = __instance.GetProperty<DiContainer, MonoInstallerBase>("Container");
+			DiContainer container = __instance.GetProperty<DiContainer, MonoInstallerBase>("Container");
             var colorManager = container.Resolve<EnvironmentColorManager>();
             container.Inject(colorManager);
             colorManager.Awake();
-            colorManager.Start();
 
             foreach (var gameObject in _objectsToEnable)
             {
                 var lightSwitchEventEffects = gameObject.transform.GetComponentsInChildren<LightSwitchEventEffect>();
+                if (lightSwitchEventEffects == null)
+                {
+                    _logger.Warn("Could not get LightSwitchEventEffect, continuing");
+                    continue;
+                }
                 foreach (var component in lightSwitchEventEffects)
-                    component.Awake();
+                    component?.Start();
             }
         }
     }
