@@ -44,19 +44,20 @@ namespace MultiplayerExtensions.Patchers
             EnvironmentName envName =
 	            beatmapLevel.GetEnvironmentName(beatmapKey.beatmapCharacteristic, beatmapKey.difficulty);
             EnvironmentInfoSO? environmentInfo = _environmentsListModel.GetEnvironmentInfoBySerializedNameSafe(envName);
-            if (____loadedMultiplayerEnvironmentInfo == null) __instance.GetOrLoadMultiplayerEnvironmentInfo(); // If the original env info is not loaded, we load it
-			_originalEnvironmentInfo = ____loadedMultiplayerEnvironmentInfo;
+            _originalEnvironmentInfo = __instance.GetOrLoadMultiplayerEnvironmentInfo(); // Save original env info in a temp variable
+            _logger.Debug($"Original Env Name {_originalEnvironmentInfo.serializedName}");
 			____loadedMultiplayerEnvironmentInfo = environmentInfo;
+			_logger.Debug($"Override env name {____loadedMultiplayerEnvironmentInfo.serializedName}");
             if (_gameplaySetup.environmentOverrideSettings.overrideEnvironments)
 	            ____loadedMultiplayerEnvironmentInfo = _gameplaySetup.environmentOverrideSettings.GetOverrideEnvironmentInfoForType(____loadedMultiplayerEnvironmentInfo.environmentType);
         }
 
         [AffinityPostfix]
         [AffinityPatch(typeof(MultiplayerLevelScenesTransitionSetupDataSO), "Init")]
-        private void ResetEnvironmentScene(ref EnvironmentInfoSO ____multiplayerEnvironmentInfo)
+        private void ResetEnvironmentScene(ref EnvironmentInfoSO ____loadedMultiplayerEnvironmentInfo)
         {
             if (_config.SoloEnvironment)
-                ____multiplayerEnvironmentInfo = _originalEnvironmentInfo;
+	            ____loadedMultiplayerEnvironmentInfo = _originalEnvironmentInfo;
         }
 
         [AffinityPrefix]
