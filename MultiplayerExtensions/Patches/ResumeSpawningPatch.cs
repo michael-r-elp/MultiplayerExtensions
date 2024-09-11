@@ -7,7 +7,7 @@ namespace MultiplayerExtensions.Patches
     {
         [HarmonyPrefix]
         [HarmonyPatch(typeof(MultiplayerConnectedPlayerFacade), nameof(MultiplayerConnectedPlayerFacade.ResumeSpawning))]
-        private static bool DisableAvatarRestrictions()
+        private static bool DisableMultiplayerObjects()
         {
             if (Plugin.Config.DisableMultiplayerObjects)
                 return false;
