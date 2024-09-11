@@ -45,13 +45,13 @@ namespace MultiplayerExtensions.Objects
             _menuRpcManager.setIsEntitledToLevelEvent -= HandleSetIsEntitledToLevel;
         }
 
-        [AffinityPrefix]
-        [AffinityPatch(typeof(GameServerPlayerTableCell), nameof(GameServerPlayerTableCell.SetData))]
-        public void SetDataPrefix(IConnectedPlayer connectedPlayer, ILobbyPlayerData playerData, bool hasKickPermissions, bool allowSelection, Task<EntitlementStatus> getLevelEntitlementTask, Image ____localPlayerBackgroundImage)
-        {
-            if (getLevelEntitlementTask != null)
-                getLevelEntitlementTask = Task.FromResult(EntitlementStatus.Owned);
-        }
+        //[AffinityPrefix]
+        //[AffinityPatch(typeof(GameServerPlayerTableCell), nameof(GameServerPlayerTableCell.SetData))]
+        //public void SetDataPrefix(IConnectedPlayer connectedPlayer, ILobbyPlayerData playerData, bool hasKickPermissions, bool allowSelection, Task<EntitlementStatus> getLevelEntitlementTask, Image ____localPlayerBackgroundImage)
+        //{
+        //    if (getLevelEntitlementTask != null)
+        //        getLevelEntitlementTask = Task.FromResult(EntitlementStatus.Owned);
+        //}
 
         [AffinityPostfix]
         [AffinityPatch(typeof(GameServerPlayerTableCell), nameof(GameServerPlayerTableCell.SetData))]
