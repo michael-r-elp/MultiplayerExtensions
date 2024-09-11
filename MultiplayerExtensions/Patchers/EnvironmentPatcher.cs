@@ -118,7 +118,8 @@ namespace MultiplayerExtensions.Patchers
                     scenesToPresent.Remove(defaultScene);
 
                     // fix ring lighting dogshit
-                    var trackLaneRingManagers = _objectsToEnable[0].transform.GetComponentsInChildren<TrackLaneRingsManager>();
+                    //var trackLaneRingManagers = _objectsToEnable[0].transform.GetComponentsInChildren<TrackLaneRingsManager>();
+
                 } 
                 else
                 {
@@ -132,6 +133,23 @@ namespace MultiplayerExtensions.Patchers
                     }
                 }
             }
+            //else if (scenesToPresent.Contains("MultiplayerEnvironment"))
+            //{
+            //    var sceneObjects = SceneManager.GetSceneByName(defaultScene).GetRootGameObjects().ToList();
+            //    foreach (GameObject gameObject in sceneObjects)
+            //    {
+            //        var saberBurnMarkSparkles = gameObject.transform.GetComponentInChildren<SaberBurnMarkSparkles>();
+            //        if (saberBurnMarkSparkles != null)
+            //            _logger.Debug($"Found SaberBurnMarkSparkles in GameObject {gameObject.transform.name}");
+
+            //        var colorManager = gameObject.transform.GetComponentInChildren<ColorManager>();
+            //        if (colorManager != null)
+            //            _logger.Debug($"Found ColorManager in GameObject {gameObject.transform.name}");
+
+
+            //    }
+            //}
+
         }
 
         [AffinityPostfix]
@@ -223,8 +241,8 @@ namespace MultiplayerExtensions.Patchers
             return !container.HasBinding<EnvironmentBrandingManager.InitData>();
         }
 
-        [AffinityPostfix]
-        [AffinityPatch(typeof(GameplayCoreInstaller), nameof(GameplayCoreInstaller.InstallBindings))]
+        //[AffinityPostfix]
+        //[AffinityPatch(typeof(GameplayCoreInstaller), nameof(GameplayCoreInstaller.InstallBindings))]
         private void SetEnvironmentColors(GameplayCoreInstaller __instance)
         {
 	        if (!_config.SoloEnvironment || !_scenesManager.IsSceneInStack("MultiplayerEnvironment"))
@@ -232,6 +250,7 @@ namespace MultiplayerExtensions.Patchers
                 _logger.Debug("Either SoloEnvironment disabled or MultiplayerEnvironment not in scene stack, returning");
 		        return;
 			}
+	        _logger.Debug("Running SetEnvironmentColors Patch");
 
 			DiContainer container = __instance.GetProperty<DiContainer, MonoInstallerBase>("Container");
             var colorManager = container.Resolve<EnvironmentColorManager>();
@@ -246,6 +265,7 @@ namespace MultiplayerExtensions.Patchers
                     _logger.Warn("Could not get LightSwitchEventEffect, continuing");
                     continue;
                 }
+
                 foreach (var component in lightSwitchEventEffects)
                     component?.Start();
             }
