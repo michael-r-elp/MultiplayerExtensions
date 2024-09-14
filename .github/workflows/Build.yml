@@ -18,10 +18,10 @@ jobs:
       with:
         dotnet-version: 8.0.x
     - name: Initialize modding environment
-      uses: beat-forge/init-beatsaber@v1
+      uses: michael-r-elp/init-beatsaber@v1
       with:
         token: ${{ github.token }}
-        repo: michael-r-elp/beatsaber-stripped
+        repo: beat-forge/beatsaber-stripped
         manifest: ./MultiplayerExtensions/manifest.json
     - name: Fetch Mod References
       uses: Goobwabber/download-beatmods-deps@1.2
