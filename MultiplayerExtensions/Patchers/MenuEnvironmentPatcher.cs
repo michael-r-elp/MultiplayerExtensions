@@ -64,11 +64,15 @@ namespace MultiplayerExtensions.Patchers
         [AffinityPatch(typeof(ScenesTransitionSetupDataSO), "Init")]
         private void AddEnvironmentOverrides(ref SceneInfo[] scenes)
         {
-            if (_config.SoloEnvironment && scenes.Any(scene => scene.name.Contains("Multiplayer")))
-            {
-                _logger.Debug($"At least one scenes name contains Multiplayer, adding original env info");
-                scenes = scenes.AddItem(_originalEnvironmentInfo.sceneInfo).ToArray();
-            }
+	        if (_config.SoloEnvironment && scenes.Any(scene => scene.name.Contains("Multiplayer")))
+	        {
+		        _logger.Debug($"At least one scenes name contains Multiplayer, adding original env info");
+		        // Ensures the original environment info comes before GameCore as some mods rely on GameCore being present on the scene switch callback
+		        scenes = scenes.Take(1)
+			        .Concat(new[] { _originalEnvironmentInfo.sceneInfo })
+			        .Concat(scenes.Skip(1))
+			        .ToArray();
+	        }
         }
     }
 }
