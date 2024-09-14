@@ -18,7 +18,7 @@ jobs:
       with:
         dotnet-version: 8.0.x
     - name: Initialize modding environment
-      uses: michael-r-elp/init-beatsaber@04f30b092312cb3a74ff94d04d89d3b9e8b23417
+      uses: michael-r-elp/init-beatsaber@v1.6.4
       with:
         token: ${{ github.token }}
         repo: beat-forge/beatsaber-stripped
