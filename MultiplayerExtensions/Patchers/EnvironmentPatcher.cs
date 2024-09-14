@@ -4,8 +4,8 @@ using SiraUtil.Affinity;
 using SiraUtil.Logging;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
+using Tweening;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Zenject;
@@ -241,8 +241,8 @@ namespace MultiplayerExtensions.Patchers
             return !container.HasBinding<EnvironmentBrandingManager.InitData>();
         }
 
-        //[AffinityPostfix]
-        //[AffinityPatch(typeof(GameplayCoreInstaller), nameof(GameplayCoreInstaller.InstallBindings))]
+        [AffinityPostfix]
+        [AffinityPatch(typeof(GameplayCoreInstaller), nameof(GameplayCoreInstaller.InstallBindings))]
         private void SetEnvironmentColors(GameplayCoreInstaller __instance)
         {
 	        if (!_config.SoloEnvironment || !_scenesManager.IsSceneInStack("MultiplayerEnvironment"))
@@ -257,7 +257,7 @@ namespace MultiplayerExtensions.Patchers
             container.Inject(colorManager);
             colorManager.Awake();
 
-            foreach (var gameObject in _objectsToEnable)
+			foreach (var gameObject in _objectsToEnable)
             {
                 var lightSwitchEventEffects = gameObject.transform.GetComponentsInChildren<LightSwitchEventEffect>();
                 if (lightSwitchEventEffects == null)
@@ -267,8 +267,15 @@ namespace MultiplayerExtensions.Patchers
                 }
 
                 foreach (var component in lightSwitchEventEffects)
-                    component?.Start();
-            }
+                {
+                    // We have to set this manually since BG moved the below into Start() which we can't call without causing a nullref
+                    component._usingBoostColors = false;
+                    Color color = (component._lightOnStart ? component._lightColor0 : component._lightColor0.color.ColorWithAlpha(component._offColorIntensity));
+                    Color color2 = (component._lightOnStart ? component._lightColor0Boost : component._lightColor0Boost.color.ColorWithAlpha(component._offColorIntensity));
+                    component._colorTween = new ColorTween(color, color, new Action<Color>(component.SetColor), 0f, EaseType.Linear, 0f);
+                    component.SetupTweenAndSaveOtherColors(color, color, color2, color2);
+                }
+			}
         }
     }
 }
