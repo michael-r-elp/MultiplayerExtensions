@@ -43,11 +43,8 @@ namespace MultiplayerExtensions.Patchers
                 return;
             EnvironmentName envName =
 	            beatmapLevel.GetEnvironmentName(beatmapKey.beatmapCharacteristic, beatmapKey.difficulty);
-            EnvironmentInfoSO? environmentInfo = _environmentsListModel.GetEnvironmentInfoBySerializedNameSafe(envName);
             _originalEnvironmentInfo = __instance.GetOrLoadMultiplayerEnvironmentInfo(); // Save original env info in a temp variable
-            _logger.Debug($"Original Env Name {_originalEnvironmentInfo.serializedName}");
-			____loadedMultiplayerEnvironmentInfo = environmentInfo;
-			_logger.Debug($"Override env name {____loadedMultiplayerEnvironmentInfo.serializedName}");
+			____loadedMultiplayerEnvironmentInfo = _environmentsListModel.GetEnvironmentInfoBySerializedNameSafe(envName);
             if (_gameplaySetup.environmentOverrideSettings.overrideEnvironments)
 	            ____loadedMultiplayerEnvironmentInfo = _gameplaySetup.environmentOverrideSettings.GetOverrideEnvironmentInfoForType(____loadedMultiplayerEnvironmentInfo.environmentType);
         }
