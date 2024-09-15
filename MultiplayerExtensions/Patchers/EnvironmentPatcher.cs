@@ -133,23 +133,6 @@ namespace MultiplayerExtensions.Patchers
                     }
                 }
             }
-            //else if (scenesToPresent.Contains("MultiplayerEnvironment"))
-            //{
-            //    var sceneObjects = SceneManager.GetSceneByName(defaultScene).GetRootGameObjects().ToList();
-            //    foreach (GameObject gameObject in sceneObjects)
-            //    {
-            //        var saberBurnMarkSparkles = gameObject.transform.GetComponentInChildren<SaberBurnMarkSparkles>();
-            //        if (saberBurnMarkSparkles != null)
-            //            _logger.Debug($"Found SaberBurnMarkSparkles in GameObject {gameObject.transform.name}");
-
-            //        var colorManager = gameObject.transform.GetComponentInChildren<ColorManager>();
-            //        if (colorManager != null)
-            //            _logger.Debug($"Found ColorManager in GameObject {gameObject.transform.name}");
-
-
-            //    }
-            //}
-
         }
 
         [AffinityPostfix]
