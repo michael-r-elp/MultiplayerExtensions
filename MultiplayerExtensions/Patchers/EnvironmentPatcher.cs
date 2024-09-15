@@ -41,8 +41,6 @@ namespace MultiplayerExtensions.Patchers
                 _logger.Info($"Fixing bind conflicts on scene '{scene.name}'.");
                 List<MonoBehaviour> removedBehaviours = new();
 
-                //if (scene.name == "MultiplayerEnvironment")
-                //    removedBehaviours = monoBehaviours.FindAll(behaviour => behaviour is ZenjectBinding binding && binding.Components.Any(c => c is LightWithIdManager));
                 if (scene.name.Contains("Environment") && !scene.name.Contains("Multiplayer"))
                     removedBehaviours = monoBehaviours.FindAll(behaviour => (behaviour is ZenjectBinding binding && binding.Components.Any(c => c is LightWithIdManager)));
 
