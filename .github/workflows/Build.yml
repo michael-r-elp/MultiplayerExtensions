@@ -27,6 +27,10 @@ jobs:
       uses: Goobwabber/download-beatmods-deps@1.2
       with:
         manifest: ./MultiplayerExtensions/manifest.json
+
+    - name: Check folders
+      run: ls -R ./Refs
+
     - name: Build
       id: Build
       env: 
