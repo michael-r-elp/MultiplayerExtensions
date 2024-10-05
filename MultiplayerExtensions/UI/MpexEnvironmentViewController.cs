@@ -33,7 +33,7 @@ namespace MultiplayerExtensions.UI
         [UIAction("#post-parse")]
         private void PostParse()
         {
-            _sideBySideDistanceIncrement.interactable = _sideBySide;
+            _sideBySideDistanceIncrement.Interactable = _sideBySide;
         }
 
         [UIComponent("side-by-side-distance-increment")]
@@ -65,7 +65,7 @@ namespace MultiplayerExtensions.UI
             {
                 _config.SideBySide = value;
                 if (_sideBySideDistanceIncrement != null)
-                    _sideBySideDistanceIncrement.interactable = value;
+                    _sideBySideDistanceIncrement.Interactable = value;
                 NotifyPropertyChanged();
             }
         }

@@ -48,7 +48,7 @@ namespace MultiplayerExtensions.UI
 
         public void Initialize()
         {
-            BSMLParser.instance.Parse(BeatSaberMarkupLanguage.Utilities.GetResourceContent(Assembly.GetExecutingAssembly(), ResourcePath), _multiplayerSettingsPanel.gameObject, this);
+            BSMLParser.Instance.Parse(BeatSaberMarkupLanguage.Utilities.GetResourceContent(Assembly.GetExecutingAssembly(), ResourcePath), _multiplayerSettingsPanel.gameObject, this);
             while (0 < _vert.transform.childCount)
                 _vert.transform.GetChild(0).SetParent(_multiplayerSettingsPanel.transform);
         }

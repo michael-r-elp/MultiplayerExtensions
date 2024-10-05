@@ -17,19 +17,16 @@ namespace MultiplayerExtensions.Environments
         private List<TubeBloomPrePassLight> _lights = new List<TubeBloomPrePassLight>();
 
         private IMultiplayerSessionManager _sessionManager = null!;
-        private MenuLightsManager _lightsManager = null!;
         private MpexPlayerManager _mpexPlayerManager = null!;
         private Config _config = null!;
 
         [Inject]
         internal void Construct(
             IMultiplayerSessionManager sessionManager,
-            MenuLightsManager lightsManager,
             MpexPlayerManager mpexPlayerManager,
             Config config)
         {
             _sessionManager = sessionManager;
-            _lightsManager = lightsManager;
             _mpexPlayerManager = mpexPlayerManager;
             _config = config;
         }
@@ -38,7 +35,7 @@ namespace MultiplayerExtensions.Environments
         {
             _lights = GetComponentsInChildren<TubeBloomPrePassLight>().ToList();
 
-            if (_sessionManager == null || _lightsManager == null || _mpexPlayerManager == null || _sessionManager.localPlayer == null)
+            if (_sessionManager == null || _mpexPlayerManager == null || _sessionManager.localPlayer == null)
                 return;
 
             if (_sessionManager.localPlayer.sortIndex == SortIndex)
@@ -98,13 +95,18 @@ namespace MultiplayerExtensions.Environments
             Color current = GetColor();
             if (current == TargetColor)
                 return;
-            if (_lightsManager.IsColorVeryCloseToColor(current, TargetColor))
+            if (IsColorVeryCloseToColor(current, TargetColor))
                 SetColor(TargetColor);
             else
                 SetColor(Color.Lerp(current, TargetColor, Time.deltaTime * SmoothTime));
         }
 
-        public void SetColor(Color color, bool immediate)
+		private bool IsColorVeryCloseToColor(Color color0, Color color1)
+		{
+			return Mathf.Abs(color0.r - color1.r) < 0.002f && Mathf.Abs(color0.g - color1.g) < 0.002f && Mathf.Abs(color0.b - color1.b) < 0.002f && Mathf.Abs(color0.a - color1.a) < 0.002f;
+		}
+
+		public void SetColor(Color color, bool immediate)
         {
             TargetColor = color;
             if (immediate)

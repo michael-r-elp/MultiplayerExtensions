@@ -20,7 +20,7 @@ namespace MultiplayerExtensions.UI
         [UIAction("#post-parse")]
         private void PostParse()
         {
-            _personalMissLightingToggle.interactable = _missLighting;
+            _personalMissLightingToggle.Interactable = _missLighting;
         }
 
         [UIComponent("personal-miss-lighting-toggle")]
@@ -67,7 +67,7 @@ namespace MultiplayerExtensions.UI
             {
                 _config.MissLighting = value;
                 if (_personalMissLightingToggle != null)
-                    _personalMissLightingToggle.interactable = value;
+                    _personalMissLightingToggle.Interactable = value;
                 NotifyPropertyChanged();
             }
         }
