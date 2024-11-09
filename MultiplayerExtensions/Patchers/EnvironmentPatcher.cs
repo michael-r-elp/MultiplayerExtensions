@@ -9,6 +9,7 @@ using Tweening;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Zenject;
+using Zenject.Internal;
 
 namespace MultiplayerExtensions.Patchers
 {
@@ -32,7 +33,8 @@ namespace MultiplayerExtensions.Patchers
         private List<MonoBehaviour> _behavioursToInject = new();
 
         [AffinityPostfix]
-        [AffinityPatch(typeof(SceneDecoratorContext), "GetInjectableMonoBehaviours")]
+		[AffinityPriority(Priority.High)]
+		[AffinityPatch(typeof(SceneDecoratorContext), "GetInjectableMonoBehaviours")]
         private void PreventEnvironmentInjection(SceneDecoratorContext __instance, List<MonoBehaviour> monoBehaviours, DiContainer ____container)
         {
             var scene = __instance.gameObject.scene;
@@ -41,12 +43,17 @@ namespace MultiplayerExtensions.Patchers
                 _logger.Info($"Fixing bind conflicts on scene '{scene.name}'.");
                 List<MonoBehaviour> removedBehaviours = new();
 
-                if (scene.name.Contains("Environment") && !scene.name.Contains("Multiplayer"))
-                    removedBehaviours = monoBehaviours.FindAll(behaviour => (behaviour is ZenjectBinding binding && binding.Components.Any(c => c is LightWithIdManager)));
+	            if (scene.name.Contains("Environment") && !scene.name.Contains("Multiplayer"))
+                    removedBehaviours.AddRange(monoBehaviours.FindAll(behaviour => (behaviour is ZenjectBinding binding && binding.Components.Any(c => c is LightWithIdManager))));
 
                 if (removedBehaviours.Any())
                 {
-                    _logger.Info($"Removing behaviours '{string.Join(", ", removedBehaviours.Select(behaviour => behaviour.GetType()))}' from scene '{scene.name}'.");
+                    string removedBehaviourStr = string.Join(", ", 
+                        removedBehaviours.Select(behaviour => (behaviour is ZenjectBinding binding ? 
+                            string.Join(", ", binding.Components.Select(comp => (comp.GetType() + " " + comp.gameObject.name))) : 
+                            (behaviour.GetType() + " " + behaviour.gameObject.name))));
+
+					_logger.Info($"Removing behaviours '{removedBehaviourStr}' from scene '{scene.name}'.");
                     monoBehaviours.RemoveAll(monoBehaviour => removedBehaviours.Contains(monoBehaviour));
                 }
 
@@ -70,7 +77,7 @@ namespace MultiplayerExtensions.Patchers
         private List<MonoInstaller> _installerPrefabs = new();
 
         [AffinityPrefix]
-        [AffinityPatch(typeof(SceneDecoratorContext), "InstallDecoratorInstallers")]
+		[AffinityPatch(typeof(SceneDecoratorContext), "InstallDecoratorInstallers")]
         private void PreventEnvironmentInstall(SceneDecoratorContext __instance, List<InstallerBase> ____normalInstallers, List<Type> ____normalInstallerTypes, List<ScriptableObjectInstaller> ____scriptableObjectInstallers, List<MonoInstaller> ____monoInstallers, List<MonoInstaller> ____installerPrefabs)
         {
             var scene = __instance.gameObject.scene;
@@ -100,12 +107,13 @@ namespace MultiplayerExtensions.Patchers
             }
         }
 
-        private List<GameObject> _objectsToEnable = new();
+		private List<GameObject> _objectsToEnable = new();
 
         [AffinityPrefix]
-        [AffinityPatch(typeof(GameScenesManager), "ActivatePresentedSceneRootObjects")]
+		[AffinityPatch(typeof(GameScenesManager), "ActivatePresentedSceneRootObjects")]
         private void PreventEnvironmentActivation(List<string> scenesToPresent)
         {
+            _logger.Trace($"ScenesToPresent {string.Join(", ", scenesToPresent)}");
             string defaultScene = scenesToPresent.FirstOrDefault(scene => scene.Contains("Environment") && !scene.Contains("Multiplayer"));
             if (defaultScene != null)
             {
@@ -114,14 +122,11 @@ namespace MultiplayerExtensions.Patchers
                     _logger.Info($"Preventing environment activation. ({defaultScene})");
                     _objectsToEnable = SceneManager.GetSceneByName(defaultScene).GetRootGameObjects().ToList();
                     scenesToPresent.Remove(defaultScene);
-
-                    // fix ring lighting dogshit
-                    //var trackLaneRingManagers = _objectsToEnable[0].transform.GetComponentsInChildren<TrackLaneRingsManager>();
-
-                } 
+                }
                 else
                 {
                     // Make sure hud is enabled in solo
+                    _logger.Trace("Ensuring HUD is enabled");
                     var sceneObjects = SceneManager.GetSceneByName(defaultScene).GetRootGameObjects().ToList();
                     foreach (GameObject gameObject in sceneObjects)
                     {
@@ -134,18 +139,35 @@ namespace MultiplayerExtensions.Patchers
         }
 
         [AffinityPostfix]
-        [AffinityPatch(typeof(GameObjectContext), "GetInjectableMonoBehaviours")]
+		[AffinityPatch(typeof(GameObjectContext), "GetInjectableMonoBehaviours")]
         private void InjectEnvironment(GameObjectContext __instance, List<MonoBehaviour> monoBehaviours)
         {
-            if (__instance.transform.name.Contains("LocalActivePlayer") && _config.SoloEnvironment)
+	        if (__instance.transform.name.Contains("LocalActivePlayer") && _config.SoloEnvironment)
             {
                 _logger.Info($"Injecting environment.");
                 monoBehaviours.AddRange(_behavioursToInject);
             }
         }
 
+		// Fixes for Chromas TrackLaneRingInjection, see https://github.com/Aeroluna/Heck/blob/027ac8fc435afba7642aed57a251f7b991f32221/Chroma/HarmonyPatches/EnvironmentComponent/RingAwakeInstantiator.cs#L69
+		[AffinityPrefix]
+        [AffinityPatch(typeof(DiContainer), nameof(DiContainer.QueueForInject))]
+        private bool IHateChromaTrackLaneRingInjection(DiContainer __instance,
+	        ref object instance)
+        {
+	        if (_scenesManager.IsSceneInStack("MultiplayerEnvironment") && _config.SoloEnvironment && instance is LightPairRotationEventEffect lightPair)
+	        {
+		        _logger.Trace($"Preventing TrackLaneRing {lightPair.name} injection, parent go name: {lightPair.transform.parent.gameObject.name}");
+		        lightPair.transform.parent.gameObject.SetActive(false);
+
+				return false;
+	        }
+
+	        return true;
+        }
+
         [AffinityPrefix]
-        [AffinityPatch(typeof(Context), "InstallInstallers", AffinityMethodType.Normal, null, typeof(List<InstallerBase>), typeof(List<Type>), typeof(List<ScriptableObjectInstaller>), typeof(List<MonoInstaller>), typeof(List<MonoInstaller>))]
+		[AffinityPatch(typeof(Context), "InstallInstallers", AffinityMethodType.Normal, null, typeof(List<InstallerBase>), typeof(List<Type>), typeof(List<ScriptableObjectInstaller>), typeof(List<MonoInstaller>), typeof(List<MonoInstaller>))]
         private void InstallEnvironment(Context __instance, List<InstallerBase> normalInstallers, List<Type> normalInstallerTypes, List<ScriptableObjectInstaller> scriptableObjectInstallers, List<MonoInstaller> installers, List<MonoInstaller> installerPrefabs)
         {
             if (__instance is GameObjectContext instance && __instance.transform.name.Contains("LocalActivePlayer") && _config.SoloEnvironment)
@@ -161,7 +183,7 @@ namespace MultiplayerExtensions.Patchers
 
        
         [AffinityPrefix]
-        [AffinityPatch(typeof(GameObjectContext), "InstallInstallers")]
+		[AffinityPatch(typeof(GameObjectContext), "InstallInstallers")]
         private void LoveYouCountersPlus(GameObjectContext __instance)
         {
             if (__instance.transform.name.Contains("LocalActivePlayer") && _config.SoloEnvironment)
@@ -177,17 +199,20 @@ namespace MultiplayerExtensions.Patchers
             }
         }
 
-        [AffinityPostfix] 
-        [AffinityPatch(typeof(GameObjectContext), "InstallSceneBindings")]
+        [AffinityPostfix]
+		[AffinityPatch(typeof(GameObjectContext), "InstallSceneBindings")]
         private void ActivateEnvironment(GameObjectContext __instance)
         {
             if (__instance.transform.name.Contains("LocalActivePlayer") && _config.SoloEnvironment)
             {
                 _logger.Info($"Activating environment.");
                 foreach (GameObject gameObject in _objectsToEnable)
-                    gameObject.SetActive(true);
+                {
+                    _logger.Trace($"Enabling GameObject: {gameObject.name}");
+					gameObject.SetActive(true);
+				}
 
-                var activeObjects = __instance.transform.Find("IsActiveObjects");
+				var activeObjects = __instance.transform.Find("IsActiveObjects");
                 activeObjects.Find("Lasers").gameObject.SetActive(false);
                 activeObjects.Find("Construction").gameObject.SetActive(false);
                 activeObjects.Find("BigSmokePS").gameObject.SetActive(false);
@@ -215,7 +240,7 @@ namespace MultiplayerExtensions.Patchers
         }
 
         [HarmonyPrefix]
-        [HarmonyPatch(typeof(EnvironmentSceneSetup), nameof(EnvironmentSceneSetup.InstallBindings))]
+		[HarmonyPatch(typeof(EnvironmentSceneSetup), nameof(EnvironmentSceneSetup.InstallBindings))]
         private static bool RemoveDuplicateInstalls(EnvironmentSceneSetup __instance)
         {
             DiContainer container = __instance.GetProperty<DiContainer, MonoInstallerBase>("Container");
@@ -223,8 +248,8 @@ namespace MultiplayerExtensions.Patchers
         }
 
         [AffinityPostfix]
-        [AffinityPatch(typeof(GameplayCoreInstaller), nameof(GameplayCoreInstaller.InstallBindings))]
-        private void SetEnvironmentColors(GameplayCoreInstaller __instance)
+		[AffinityPatch(typeof(GameplayCoreInstaller), nameof(GameplayCoreInstaller.InstallBindings))]
+        private void LightInjectionFixes(GameplayCoreInstaller __instance)
         {
 	        if (!_config.SoloEnvironment || !_scenesManager.IsSceneInStack("MultiplayerEnvironment"))
 	        {
@@ -234,28 +259,52 @@ namespace MultiplayerExtensions.Patchers
 	        _logger.Debug("Running SetEnvironmentColors Patch");
 
 			DiContainer container = __instance.GetProperty<DiContainer, MonoInstallerBase>("Container");
+
+			var trackLaneRingsManagers = _objectsToEnable.SelectMany(gameObject =>
+				gameObject.transform.GetComponentsInChildren<TrackLaneRingsManager>());
+
+			foreach (var trackLaneRingsManager in trackLaneRingsManagers)
+			{
+				if (trackLaneRingsManager == null)
+                    continue;
+
+				foreach (var rings in trackLaneRingsManager.Rings)
+				{
+                    if (rings == null)
+                        continue;
+
+                    _logger.Trace($"Fixing injection and enabling go {rings.gameObject.name}");
+
+                    List<MonoBehaviour> injectables = new();
+                    ZenUtilInternal.GetInjectableMonoBehavioursUnderGameObject(rings.gameObject, injectables);
+                    foreach (var behaviour in injectables) container.Inject(behaviour);
+                    rings.gameObject.SetActive(true);
+				}
+			}
+
+
+
             var colorManager = container.Resolve<EnvironmentColorManager>();
             container.Inject(colorManager);
             colorManager.Awake();
 
-			foreach (var gameObject in _objectsToEnable)
-            {
-                var lightSwitchEventEffects = gameObject.transform.GetComponentsInChildren<LightSwitchEventEffect>();
-                if (lightSwitchEventEffects == null)
-                {
-                    _logger.Warn("Could not get LightSwitchEventEffect, continuing");
-                    continue;
-                }
+			var lightSwitchEventEffects = _objectsToEnable.SelectMany(gameObject => gameObject.transform.GetComponentsInChildren<LightSwitchEventEffect>());
 
-                foreach (var component in lightSwitchEventEffects)
-                {
-                    // We have to set this manually since BG moved the below into Start() which we can't call without causing a nullref
-                    component._usingBoostColors = false;
-                    Color color = (component._lightOnStart ? component._lightColor0 : component._lightColor0.color.ColorWithAlpha(component._offColorIntensity));
-                    Color color2 = (component._lightOnStart ? component._lightColor0Boost : component._lightColor0Boost.color.ColorWithAlpha(component._offColorIntensity));
-                    component._colorTween = new ColorTween(color, color, new Action<Color>(component.SetColor), 0f, EaseType.Linear, 0f);
-                    component.SetupTweenAndSaveOtherColors(color, color, color2, color2);
-                }
+            if (lightSwitchEventEffects == null || lightSwitchEventEffects.Count() == 0)
+            {
+                _logger.Warn("Could not get LightSwitchEventEffect, continuing");
+            }
+            else
+            {
+				foreach (var component in lightSwitchEventEffects)
+				{
+					// We have to set this manually since BG moved the below into Start() which we can't call without causing a nullref
+					component._usingBoostColors = false;
+					Color color = (component._lightOnStart ? component._lightColor0 : component._lightColor0.color.ColorWithAlpha(component._offColorIntensity));
+					Color color2 = (component._lightOnStart ? component._lightColor0Boost : component._lightColor0Boost.color.ColorWithAlpha(component._offColorIntensity));
+					component._colorTween = new ColorTween(color, color, new Action<Color>(component.SetColor), 0f, EaseType.Linear, 0f);
+					component.SetupTweenAndSaveOtherColors(color, color, color2, color2);
+				}
 			}
         }
     }
